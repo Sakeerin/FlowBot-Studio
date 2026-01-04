@@ -1,10 +1,11 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+  const reflector = app.get(Reflector);
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -12,17 +13,19 @@ async function bootstrap() {
       transform: true,
     })
   );
-  
+
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(reflector));
+
   app.enableCors({
     origin: process.env.WEB_URL || 'http://localhost:3000',
     credentials: true,
   });
-  
+
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  
+
   console.log(`🚀 API server running on http://localhost:${port}`);
+  console.log(`📊 Health check: http://localhost:${port}/health`);
 }
 
 bootstrap();
-
