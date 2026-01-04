@@ -1,0 +1,312 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Multi-tenant foundation
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  domain    String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  users             User[]
+  bots              Bot[]
+  knowledgeBases    KnowledgeCollection[]
+  channelConnections ChannelConnection[]
+  auditLogs         AuditLog[]
+  
+  @@map("tenants")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  passwordHash String
+  name      String?
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roleAssignments RoleAssignment[]
+  auditLogs      AuditLog[]
+  
+  @@index([tenantId, email])
+  @@map("users")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  BUILDER
+  AGENT
+  VIEWER
+  AUDITOR
+}
+
+model RoleAssignment {
+  id        String   @id @default(uuid())
+  userId    String
+  tenantId  String
+  role      Role
+  createdAt DateTime @default(now())
+  
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, tenantId, role])
+  @@index([tenantId, role])
+  @@map("role_assignments")
+}
+
+// Bot & Versioning
+enum BotVersionStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Bot {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  description String?
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  versions       BotVersion[]
+  flowGraphs     FlowGraph[]
+  knowledgeBases KnowledgeCollection[]
+  channelConnections ChannelConnection[]
+  
+  @@index([tenantId])
+  @@map("bots")
+}
+
+model BotVersion {
+  id        String          @id @default(uuid())
+  botId     String
+  version   Int
+  status    BotVersionStatus
+  flowGraph Json
+  config    Json            @default("{}")
+  createdAt DateTime        @default(now())
+  
+  bot Bot @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  @@unique([botId, version])
+  @@index([botId, status])
+  @@map("bot_versions")
+}
+
+model FlowGraph {
+  id        String   @id @default(uuid())
+  botId     String
+  isDraft   Boolean  @default(true)
+  nodes     Json
+  edges     Json
+  variables Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  bot Bot @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  @@unique([botId, isDraft])
+  @@map("flow_graphs")
+}
+
+// Knowledge Base
+model KnowledgeCollection {
+  id        String   @id @default(uuid())
+  tenantId  String
+  botId     String?
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bot     Bot?             @relation(fields: [botId], references: [id], onDelete: SetNull)
+  sources KnowledgeSource[]
+  
+  @@index([tenantId])
+  @@map("knowledge_collections")
+}
+
+model KnowledgeSource {
+  id          String   @id @default(uuid())
+  collectionId String
+  type        String   // "qa" | "text" | "file"
+  content     Json
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  
+  collection KnowledgeCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  chunks     KnowledgeChunk[]
+  
+  @@index([collectionId])
+  @@map("knowledge_sources")
+}
+
+model KnowledgeChunk {
+  id        String   @id @default(uuid())
+  sourceId  String
+  content   String
+  embedding String?  // JSON array of floats
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  
+  source KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  
+  @@index([sourceId])
+  @@map("knowledge_chunks")
+}
+
+// Channels
+model ChannelConnection {
+  id        String   @id @default(uuid())
+  tenantId  String
+  botId     String?
+  channel   String   // "web" | "line" | "facebook" | etc.
+  config    Json     @default("{}")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tenant  Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bot     Bot?                @relation(fields: [botId], references: [id], onDelete: SetNull)
+  sessions ConversationSession[]
+  
+  @@index([tenantId, channel])
+  @@map("channel_connections")
+}
+
+// Conversations
+model ConversationSession {
+  id        String   @id @default(uuid())
+  channelConnectionId String
+  externalUserId String
+  botId     String?
+  state     Json     @default("{}")
+  variables Json     @default("{}")
+  currentNodeId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  channelConnection ChannelConnection @relation(fields: [channelConnectionId], references: [id], onDelete: Cascade)
+  messages          Message[]
+  traceSpans        TraceSpan[]
+  handoffTickets    HandoffTicket[]
+  
+  @@index([channelConnectionId, externalUserId])
+  @@map("conversation_sessions")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  sessionId String
+  role      String   // "user" | "bot" | "agent"
+  content   String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  
+  session ConversationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId, createdAt])
+  @@map("messages")
+}
+
+model TraceSpan {
+  id        String   @id @default(uuid())
+  sessionId String
+  nodeId    String?
+  action    String
+  input     Json?
+  output    Json?
+  latency   Int?
+  error     String?
+  createdAt DateTime @default(now())
+  
+  session ConversationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId, createdAt])
+  @@map("trace_spans")
+}
+
+// Handoff
+model HandoffTicket {
+  id        String   @id @default(uuid())
+  sessionId String
+  status    String   // "open" | "assigned" | "resolved" | "closed"
+  priority  String   @default("normal")
+  assignedTo String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  session ConversationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([status, createdAt])
+  @@map("handoff_tickets")
+}
+
+// Tools
+model Tool {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  type      String   // "http" | "function" | etc.
+  config    Json
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  secrets ToolSecret[]
+  
+  @@index([tenantId])
+  @@map("tools")
+}
+
+model ToolSecret {
+  id        String   @id @default(uuid())
+  toolId    String
+  key       String
+  value     String   // encrypted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tool Tool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  
+  @@unique([toolId, key])
+  @@map("tool_secrets")
+}
+
+// Audit Log
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  actorId   String
+  action    String
+  targetType String
+  targetId  String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor  User   @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId, createdAt])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
+

@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+*.lcov
+
+# Next.js
+.next/
+out/
+build
+dist
+
+# Production
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Misc
+.DS_Store
+*.pem
+.pnpm-store
+
+# Database
+*.db
+*.db-journal
+
+# Docker
+.dockerignore
+
