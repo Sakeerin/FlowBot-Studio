@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -23,3 +27,5 @@ a {
   text-decoration: none;
 }
 
+/* React Flow styles */
+@import 'reactflow/dist/style.css';

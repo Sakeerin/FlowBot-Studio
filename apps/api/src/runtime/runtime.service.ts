@@ -327,5 +327,57 @@ export class RuntimeService {
 
     return { messages, traceSpans };
   }
+
+  async simulate(botId: string, message: string) {
+    // Get bot and draft flow
+    const bot = await this.prisma.bot.findUnique({
+      where: { id: botId },
+      include: {
+        flowGraphs: {
+          where: { isDraft: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!bot || !bot.flowGraphs[0]) {
+      throw new NotFoundException('Bot or draft flow not found');
+    }
+
+    const flowGraph = bot.flowGraphs[0];
+    const flowGraphData = {
+      nodes: flowGraph.nodes as any,
+      edges: flowGraph.edges as any,
+      variables: flowGraph.variables as any,
+    };
+
+    // Create a temporary session for simulation
+    const context: ExecutionContext = {
+      sessionId: `sim-${Date.now()}`,
+      botId,
+      tenantId: bot.tenantId,
+      flowGraph: flowGraphData,
+      variables: {},
+      currentNodeId: null,
+      stepCount: 0,
+      processedMessageIds: new Set(),
+    };
+
+    const payload: RuntimeInboundMessagePayload = {
+      messageId: `sim-msg-${Date.now()}`,
+      userId: 'sim-user',
+      channel: 'web',
+      text: message,
+      type: 'text',
+    };
+
+    const result = await this.executeFlow(context, payload);
+
+    return {
+      messages: result.messages,
+      traceSpans: result.traceSpans,
+      variables: context.variables,
+    };
+  }
 }
 

@@ -13,5 +13,12 @@ export class RuntimeController {
   ) {
     return this.runtimeService.processInbound(channel, payload);
   }
-}
 
+  @Post('simulate/:botId')
+  async simulate(
+    @Param('botId') botId: string,
+    @Body() body: { message: string }
+  ) {
+    return this.runtimeService.simulate(botId, body.message);
+  }
+}
