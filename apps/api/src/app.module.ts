@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditLogModule } from './audit/audit-log.module';
 import { BotsModule } from './bots/bots.module';
+import { RuntimeModule } from './runtime/runtime.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { BotsModule } from './bots/bots.module';
     AuditLogModule,
     AuthModule,
     BotsModule,
+    RuntimeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
