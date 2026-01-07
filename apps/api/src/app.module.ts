@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { AuditLogModule } from './audit/audit-log.module';
 import { BotsModule } from './bots/bots.module';
 import { RuntimeModule } from './runtime/runtime.module';
+import { KnowledgeModule } from './knowledge/knowledge.module';
+import { GuardrailsModule } from './guardrails/guardrails.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { RuntimeModule } from './runtime/runtime.module';
     AuthModule,
     BotsModule,
     RuntimeModule,
+    KnowledgeModule,
+    GuardrailsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

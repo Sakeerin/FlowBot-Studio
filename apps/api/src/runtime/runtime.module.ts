@@ -11,8 +11,11 @@ import { ToolCallNodeHandler } from './handlers/tool-call-node.handler';
 import { AiAnswerNodeHandler } from './handlers/ai-answer-node.handler';
 import { HandoffNodeHandler } from './handlers/handoff-node.handler';
 import { EndNodeHandler } from './handlers/end-node.handler';
+import { GuardrailsModule } from '../guardrails/guardrails.module';
+import { KnowledgeModule } from '../knowledge/knowledge.module';
 
 @Module({
+  imports: [GuardrailsModule, KnowledgeModule],
   controllers: [RuntimeController],
   providers: [
     RuntimeService,

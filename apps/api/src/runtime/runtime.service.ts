@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RuntimeInboundMessagePayload } from '@shared/schemas/runtime';
 import { NodeHandlerRegistry } from './handlers/node-handler.registry';
 import { AuditLogService } from '../audit/audit-log.service';
+import { GuardrailsService } from '../guardrails/guardrails.service';
+import { KnowledgeService } from '../knowledge/knowledge.service';
 
 const MAX_EXECUTION_STEPS = 100;
 
@@ -22,7 +24,9 @@ export class RuntimeService {
   constructor(
     private prisma: PrismaService,
     private nodeHandlerRegistry: NodeHandlerRegistry,
-    private auditLogService: AuditLogService
+    private auditLogService: AuditLogService,
+    private guardrailsService: GuardrailsService,
+    private knowledgeService: KnowledgeService
   ) {}
 
   async processInbound(
@@ -117,21 +121,90 @@ export class RuntimeService {
       };
     }
 
-    // 6. Persist inbound message
+    // 6. Apply guardrails
+    const sanitizedText = payload.text || '';
+    const { masked: maskedText, detected: detectedPII } =
+      this.guardrailsService.maskPII(sanitizedText);
+    const { filtered: filteredText, flagged: injectionFlagged } =
+      this.guardrailsService.filterPromptInjection(maskedText);
+
+    // Check KB-only mode
+    const kbOnly = (bot.settings as any)?.kbOnly === true;
+    if (kbOnly && filteredText) {
+      // Try to retrieve from KB
+      const collections = await this.prisma.knowledgeCollection.findMany({
+        where: {
+          tenantId,
+          botId,
+        },
+      });
+
+      if (collections.length > 0) {
+        const retrievalResults = await Promise.all(
+          collections.map((col) =>
+            this.knowledgeService.retrieve(col.id, filteredText, 3)
+          )
+        );
+
+        const allResults = retrievalResults.flat();
+        if (allResults.length === 0) {
+          // No KB results, return fallback message
+          return {
+            messages: [
+              {
+                type: 'text',
+                content:
+                  "I couldn't find relevant information in my knowledge base. Would you like to speak with a human agent?",
+                metadata: {
+                  kbOnly: true,
+                  fallback: true,
+                },
+              },
+            ],
+            sessionId: session.id,
+          };
+        }
+
+        // Use top result for answer
+        const topResult = allResults[0];
+        return {
+          messages: [
+            {
+              type: 'text',
+              content: topResult.chunk.content,
+              metadata: {
+                kbOnly: true,
+                citation: {
+                  sourceId: topResult.source.id,
+                  chunkId: topResult.chunk.id,
+                  score: topResult.score,
+                },
+              },
+            },
+          ],
+          sessionId: session.id,
+        };
+      }
+    }
+
+    // 7. Persist inbound message (with masked PII for logging)
     await this.prisma.message.create({
       data: {
         sessionId: session.id,
         role: 'user',
-        content: payload.text || '',
+        content: filteredText, // Use filtered text for persistence
         metadata: {
           messageId: payload.messageId,
           type: payload.type,
+          originalText: sanitizedText, // Keep original for processing
+          detectedPII,
+          injectionFlagged,
           ...payload.metadata,
         },
       },
     });
 
-    // 7. Execute flow graph
+    // 8. Execute flow graph (use filtered text for processing)
     const context: ExecutionContext = {
       sessionId: session.id,
       botId,
@@ -146,9 +219,12 @@ export class RuntimeService {
       processedMessageIds,
     };
 
-    const result = await this.executeFlow(context, payload);
+    const result = await this.executeFlow(context, {
+      ...payload,
+      text: filteredText, // Use filtered text
+    });
 
-    // 8. Update session state
+    // 9. Update session state
     processedMessageIds.add(payload.messageId);
     await this.prisma.conversationSession.update({
       where: { id: session.id },
@@ -161,20 +237,29 @@ export class RuntimeService {
       },
     });
 
-    // 9. Persist outgoing messages
+    // 10. Persist outgoing messages (mask PII before saving)
     const outgoingMessages = [];
     for (const msg of result.messages) {
+      // Mask PII in bot responses for logging
+      const { masked: maskedContent } = this.guardrailsService.maskPII(
+        msg.content
+      );
+
       const saved = await this.prisma.message.create({
         data: {
           sessionId: session.id,
           role: 'bot',
-          content: msg.content,
-          metadata: msg.metadata || {},
+          content: maskedContent,
+          metadata: {
+            ...(msg.metadata || {}),
+            originalContent: msg.content, // Keep original for delivery
+          },
         },
       });
+      // Send original (non-masked) to user
       outgoingMessages.push({
         type: msg.type,
-        content: msg.content,
+        content: msg.content, // Send original to user
         metadata: msg.metadata,
       });
     }
