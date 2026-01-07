@@ -8,4 +8,5 @@ export * from './tool';
 export * from './knowledge';
 export * from './runtime';
 export * from './handoff';
+export * from './channel';
 export * from './audit';

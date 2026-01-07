@@ -3,7 +3,9 @@ import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true, // Enable raw body for webhook signature verification
+  });
   const reflector = app.get(Reflector);
 
   app.useGlobalPipes(
@@ -26,6 +28,7 @@ async function bootstrap() {
 
   console.log(`🚀 API server running on http://localhost:${port}`);
   console.log(`📊 Health check: http://localhost:${port}/health`);
+  console.log(`🔗 Webhooks: http://localhost:${port}/webhooks/channel/:channel`);
 }
 
 bootstrap();

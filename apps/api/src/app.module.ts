@@ -9,6 +9,7 @@ import { BotsModule } from './bots/bots.module';
 import { RuntimeModule } from './runtime/runtime.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
 import { GuardrailsModule } from './guardrails/guardrails.module';
+import { ChannelsModule } from './channels/channels.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { GuardrailsModule } from './guardrails/guardrails.module';
     RuntimeModule,
     KnowledgeModule,
     GuardrailsModule,
+    ChannelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
