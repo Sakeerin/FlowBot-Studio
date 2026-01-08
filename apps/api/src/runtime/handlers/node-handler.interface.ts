@@ -20,7 +20,8 @@ export interface NodeHandler {
     node: any,
     variables: Record<string, any>,
     inboundPayload: RuntimeInboundMessagePayload,
-    flowGraph: any
+    flowGraph: any,
+    tenantId?: string,
+    botId?: string
   ): Promise<NodeHandlerResult>;
 }
-

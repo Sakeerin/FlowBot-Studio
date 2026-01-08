@@ -8,7 +8,9 @@ export class AskCollectNodeHandler implements NodeHandler {
     node: any,
     variables: Record<string, any>,
     inboundPayload: RuntimeInboundMessagePayload,
-    flowGraph: any
+    flowGraph: any,
+    _tenantId?: string,
+    _botId?: string
   ): Promise<NodeHandlerResult> {
     const variableName = node.data.variableName;
     const prompt = node.data.prompt || 'Please provide input:';
@@ -61,11 +63,7 @@ export class AskCollectNodeHandler implements NodeHandler {
     };
   }
 
-  private validateAndCollect(
-    input: string,
-    type: string,
-    validation?: any
-  ): any {
+  private validateAndCollect(input: string, type: string, validation?: any): any {
     let value: any = input;
 
     // Type conversion
@@ -87,7 +85,7 @@ export class AskCollectNodeHandler implements NodeHandler {
         break;
       case 'phone':
         // Basic phone validation
-        if (!/^[\d\s\-\+\(\)]+$/.test(input)) {
+        if (!/^[\d\s\-+()]+$/.test(input)) {
           throw new Error('Invalid phone format');
         }
         value = input;
@@ -102,14 +100,10 @@ export class AskCollectNodeHandler implements NodeHandler {
         throw new Error('This field is required');
       }
       if (validation.minLength && String(value).length < validation.minLength) {
-        throw new Error(
-          `Minimum length is ${validation.minLength} characters`
-        );
+        throw new Error(`Minimum length is ${validation.minLength} characters`);
       }
       if (validation.maxLength && String(value).length > validation.maxLength) {
-        throw new Error(
-          `Maximum length is ${validation.maxLength} characters`
-        );
+        throw new Error(`Maximum length is ${validation.maxLength} characters`);
       }
       if (validation.pattern && !new RegExp(validation.pattern).test(String(value))) {
         throw new Error('Invalid format');
@@ -119,4 +113,3 @@ export class AskCollectNodeHandler implements NodeHandler {
     return value;
   }
 }
-

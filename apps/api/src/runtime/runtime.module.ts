@@ -13,9 +13,10 @@ import { HandoffNodeHandler } from './handlers/handoff-node.handler';
 import { EndNodeHandler } from './handlers/end-node.handler';
 import { GuardrailsModule } from '../guardrails/guardrails.module';
 import { KnowledgeModule } from '../knowledge/knowledge.module';
+import { ToolsModule } from '../tools/tools.module';
 
 @Module({
-  imports: [GuardrailsModule, KnowledgeModule],
+  imports: [GuardrailsModule, KnowledgeModule, ToolsModule],
   controllers: [RuntimeController],
   providers: [
     RuntimeService,
@@ -33,4 +34,3 @@ import { KnowledgeModule } from '../knowledge/knowledge.module';
   exports: [RuntimeService],
 })
 export class RuntimeModule {}
-

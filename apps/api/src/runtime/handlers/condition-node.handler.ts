@@ -8,7 +8,9 @@ export class ConditionNodeHandler implements NodeHandler {
     node: any,
     variables: Record<string, any>,
     inboundPayload: RuntimeInboundMessagePayload,
-    flowGraph: any
+    flowGraph: any,
+    _tenantId?: string,
+    _botId?: string
   ): Promise<NodeHandlerResult> {
     const conditions = node.data.conditions || [];
     const operator = node.data.operator || 'AND';
@@ -16,21 +18,17 @@ export class ConditionNodeHandler implements NodeHandler {
     let result: boolean;
 
     if (operator === 'AND') {
-      result = conditions.every((cond: any) =>
-        this.evaluateCondition(cond, variables)
-      );
+      result = conditions.every((cond: any) => this.evaluateCondition(cond, variables));
     } else {
-      result = conditions.some((cond: any) =>
-        this.evaluateCondition(cond, variables)
-      );
+      result = conditions.some((cond: any) => this.evaluateCondition(cond, variables));
     }
 
     // Find edge that matches the condition result
     const edges = flowGraph.edges.filter((e: any) => e.source === node.id);
-    
+
     // Look for edge with condition matching the result
     let nextNodeId: string | null = null;
-    
+
     for (const edge of edges) {
       if (edge.condition) {
         const edgeResult = this.evaluateCondition(edge.condition, variables);
@@ -81,4 +79,3 @@ export class ConditionNodeHandler implements NodeHandler {
     }
   }
 }
-

@@ -8,7 +8,9 @@ export class StartNodeHandler implements NodeHandler {
     node: any,
     variables: Record<string, any>,
     inboundPayload: RuntimeInboundMessagePayload,
-    flowGraph: any
+    flowGraph: any,
+    _tenantId?: string,
+    _botId?: string
   ): Promise<NodeHandlerResult> {
     // Start node just passes through to the next node
     const edges = flowGraph.edges.filter((e: any) => e.source === node.id);
@@ -20,4 +22,3 @@ export class StartNodeHandler implements NodeHandler {
     };
   }
 }
-

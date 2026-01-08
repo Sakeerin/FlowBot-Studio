@@ -8,10 +8,12 @@ export const httpToolConfigSchema = z.object({
   bodyTemplate: z.string().optional(),
   timeout: z.number().positive().optional().default(30000),
   retries: z.number().int().min(0).max(3).optional().default(0),
-  auth: z.object({
-    type: z.enum(['apiKey', 'bearer', 'basic']),
-    key: z.string(),
-  }).optional(),
+  auth: z
+    .object({
+      type: z.enum(['apiKey', 'bearer', 'basic']),
+      key: z.string(),
+    })
+    .optional(),
 });
 
 export const toolConfigSchema = z.union([
@@ -37,4 +39,4 @@ export const toolDtoSchema = createToolSchema.extend({
 });
 
 export type ToolDto = z.infer<typeof toolDtoSchema>;
-
+export type HTTPToolConfig = z.infer<typeof httpToolConfigSchema>;

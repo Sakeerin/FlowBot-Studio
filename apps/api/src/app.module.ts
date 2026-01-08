@@ -10,6 +10,7 @@ import { RuntimeModule } from './runtime/runtime.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
 import { GuardrailsModule } from './guardrails/guardrails.module';
 import { ChannelsModule } from './channels/channels.module';
+import { ToolsModule } from './tools/tools.module';
 
 @Module({
   imports: [
@@ -25,9 +26,9 @@ import { ChannelsModule } from './channels/channels.module';
     KnowledgeModule,
     GuardrailsModule,
     ChannelsModule,
+    ToolsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
-

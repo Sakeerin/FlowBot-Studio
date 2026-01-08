@@ -11,7 +11,9 @@ export class HandoffNodeHandler implements NodeHandler {
     node: any,
     variables: Record<string, any>,
     inboundPayload: RuntimeInboundMessagePayload,
-    flowGraph: any
+    flowGraph: any,
+    _tenantId?: string,
+    _botId?: string
   ): Promise<NodeHandlerResult> {
     // Get session ID from context (passed through execution context)
     const sessionId = (variables as any).__sessionId__;
@@ -66,4 +68,3 @@ export class HandoffNodeHandler implements NodeHandler {
     };
   }
 }
-

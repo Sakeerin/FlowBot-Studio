@@ -8,7 +8,9 @@ export class RouterNodeHandler implements NodeHandler {
     node: any,
     variables: Record<string, any>,
     inboundPayload: RuntimeInboundMessagePayload,
-    flowGraph: any
+    flowGraph: any,
+    _tenantId?: string,
+    _botId?: string
   ): Promise<NodeHandlerResult> {
     const intentKeyword = node.data.intentKeyword?.toLowerCase() || '';
     const userText = (inboundPayload.text || '').toLowerCase();
@@ -45,4 +47,3 @@ export class RouterNodeHandler implements NodeHandler {
     };
   }
 }
-

@@ -29,10 +29,7 @@ export class RuntimeService {
     private knowledgeService: KnowledgeService
   ) {}
 
-  async processInbound(
-    channel: string,
-    payload: RuntimeInboundMessagePayload
-  ) {
+  async processInbound(channel: string, payload: RuntimeInboundMessagePayload) {
     // 1. Verify channel signature (stub for web, real for LINE later)
     // For MVP, we'll skip signature verification for 'web' channel
 
@@ -57,9 +54,7 @@ export class RuntimeService {
     });
 
     if (!channelConnection || !channelConnection.bot) {
-      throw new NotFoundException(
-        `No active bot found for channel: ${channel}`
-      );
+      throw new NotFoundException(`No active bot found for channel: ${channel}`);
     }
 
     const bot = channelConnection.bot;
@@ -96,9 +91,7 @@ export class RuntimeService {
     }
 
     // 5. Check idempotency
-    const processedMessageIds = new Set<string>(
-      (session.state as any).processedMessageIds || []
-    );
+    const processedMessageIds = new Set<string>((session.state as any).processedMessageIds || []);
 
     if (processedMessageIds.has(payload.messageId)) {
       // Already processed, return existing response
@@ -141,9 +134,7 @@ export class RuntimeService {
 
       if (collections.length > 0) {
         const retrievalResults = await Promise.all(
-          collections.map((col) =>
-            this.knowledgeService.retrieve(col.id, filteredText, 3)
-          )
+          collections.map((col) => this.knowledgeService.retrieve(col.id, filteredText, 3))
         );
 
         const allResults = retrievalResults.flat();
@@ -241,11 +232,9 @@ export class RuntimeService {
     const outgoingMessages = [];
     for (const msg of result.messages) {
       // Mask PII in bot responses for logging
-      const { masked: maskedContent } = this.guardrailsService.maskPII(
-        msg.content
-      );
+      const { masked: maskedContent } = this.guardrailsService.maskPII(msg.content);
 
-      const saved = await this.prisma.message.create({
+      await this.prisma.message.create({
         data: {
           sessionId: session.id,
           role: 'bot',
@@ -299,8 +288,7 @@ export class RuntimeService {
       error?: string;
     }>;
   }> {
-    const messages: Array<{ type: string; content: string; metadata?: any }> =
-      [];
+    const messages: Array<{ type: string; content: string; metadata?: any }> = [];
     const traceSpans: Array<{
       nodeId?: string;
       action: string;
@@ -312,9 +300,7 @@ export class RuntimeService {
 
     // Start from Start node if no current node
     if (!context.currentNodeId) {
-      const startNode = context.flowGraph.nodes.find(
-        (n: any) => n.type === 'Start'
-      );
+      const startNode = context.flowGraph.nodes.find((n: any) => n.type === 'Start');
       if (!startNode) {
         throw new BadRequestException('Flow graph has no Start node');
       }
@@ -325,14 +311,10 @@ export class RuntimeService {
     while (context.currentNodeId && context.stepCount < MAX_EXECUTION_STEPS) {
       context.stepCount++;
 
-      const currentNode = context.flowGraph.nodes.find(
-        (n: any) => n.id === context.currentNodeId
-      );
+      const currentNode = context.flowGraph.nodes.find((n: any) => n.id === context.currentNodeId);
 
       if (!currentNode) {
-        throw new BadRequestException(
-          `Node ${context.currentNodeId} not found in flow graph`
-        );
+        throw new BadRequestException(`Node ${context.currentNodeId} not found in flow graph`);
       }
 
       const startTime = Date.now();
@@ -341,16 +323,16 @@ export class RuntimeService {
       try {
         const handler = this.nodeHandlerRegistry.getHandler(currentNode.type);
         if (!handler) {
-          throw new BadRequestException(
-            `No handler found for node type: ${currentNode.type}`
-          );
+          throw new BadRequestException(`No handler found for node type: ${currentNode.type}`);
         }
 
         handlerResult = await handler.execute(
           currentNode,
           context.variables,
           inboundPayload,
-          context.flowGraph
+          context.flowGraph,
+          context.tenantId,
+          context.botId
         );
 
         // Update variables
@@ -465,4 +447,3 @@ export class RuntimeService {
     };
   }
 }
-

@@ -8,7 +8,9 @@ export class AiAnswerNodeHandler implements NodeHandler {
     node: any,
     variables: Record<string, any>,
     inboundPayload: RuntimeInboundMessagePayload,
-    flowGraph: any
+    flowGraph: any,
+    _tenantId?: string,
+    _botId?: string
   ): Promise<NodeHandlerResult> {
     const prompt = node.data.prompt || '';
     const contextVariables = node.data.contextVariables || [];
@@ -50,4 +52,3 @@ export class AiAnswerNodeHandler implements NodeHandler {
     };
   }
 }
-
