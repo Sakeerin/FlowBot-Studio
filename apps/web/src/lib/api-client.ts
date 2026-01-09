@@ -2,7 +2,6 @@ import axios, { AxiosInstance } from 'axios';
 import {
   RegisterDto,
   LoginDto,
-  RefreshTokenDto,
   AuthResponse,
   CreateBot,
   UpdateBot,
@@ -43,12 +42,8 @@ class ApiClient {
           const refreshToken = localStorage.getItem('refreshToken');
           if (refreshToken) {
             try {
-              const response = await axios.post(
-                `${API_URL}/auth/refresh`,
-                { refreshToken }
-              );
-              const { accessToken, refreshToken: newRefreshToken } =
-                response.data;
+              const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
+              const { accessToken, refreshToken: newRefreshToken } = response.data;
               localStorage.setItem('accessToken', accessToken);
               localStorage.setItem('refreshToken', newRefreshToken);
               error.config.headers.Authorization = `Bearer ${accessToken}`;
@@ -112,10 +107,7 @@ class ApiClient {
   }
 
   async saveDraftFlow(botId: string, flowGraph: FlowGraphDto) {
-    const response = await this.client.put(
-      `/bots/${botId}/draft/flow`,
-      flowGraph
-    );
+    const response = await this.client.put(`/bots/${botId}/draft/flow`, flowGraph);
     return response.data;
   }
 
@@ -125,9 +117,7 @@ class ApiClient {
   }
 
   async rollbackBot(botId: string, version: number) {
-    const response = await this.client.post(
-      `/bots/${botId}/rollback?version=${version}`
-    );
+    const response = await this.client.post(`/bots/${botId}/rollback?version=${version}`);
     return response.data;
   }
 
@@ -138,7 +128,69 @@ class ApiClient {
     });
     return response.data;
   }
+
+  // Handoff
+  async getTickets(filters?: {
+    status?: string;
+    priority?: string;
+    assignedTo?: string;
+    search?: string;
+  }) {
+    const response = await this.client.get('/handoff', { params: filters });
+    return response.data;
+  }
+
+  async getTicket(ticketId: string) {
+    const response = await this.client.get(`/handoff/${ticketId}`);
+    return response.data;
+  }
+
+  async updateTicket(
+    ticketId: string,
+    data: {
+      status?: string;
+      priority?: string;
+      assignedTo?: string;
+    }
+  ) {
+    const response = await this.client.put(`/handoff/${ticketId}`, data);
+    return response.data;
+  }
+
+  async sendTicketMessage(ticketId: string, content: string) {
+    const response = await this.client.post(`/handoff/${ticketId}/message`, {
+      content,
+    });
+    return response.data;
+  }
+
+  async addTicketNote(ticketId: string, note: string) {
+    const response = await this.client.post(`/handoff/${ticketId}/notes`, {
+      note,
+    });
+    return response.data;
+  }
+
+  async addTicketTags(ticketId: string, tags: string[]) {
+    const response = await this.client.post(`/handoff/${ticketId}/tags`, {
+      tags,
+    });
+    return response.data;
+  }
+
+  async removeTicketTag(ticketId: string, tag: string) {
+    await this.client.delete(`/handoff/${ticketId}/tags/${encodeURIComponent(tag)}`);
+  }
+
+  async getSLAAlerts() {
+    const response = await this.client.get('/handoff/alerts');
+    return response.data;
+  }
+
+  async getSLStatus(ticketId: string) {
+    const response = await this.client.get(`/handoff/${ticketId}/sla`);
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
-

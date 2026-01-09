@@ -18,7 +18,6 @@ import { RuntimeModule } from '../runtime/runtime.module';
     WebChannelAdapter,
     LineChannelAdapter,
   ],
-  exports: [ChannelsService],
+  exports: [ChannelsService, ChannelAdapterFactory],
 })
 export class ChannelsModule {}
-

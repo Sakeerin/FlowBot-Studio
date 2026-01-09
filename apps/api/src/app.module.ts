@@ -11,6 +11,7 @@ import { KnowledgeModule } from './knowledge/knowledge.module';
 import { GuardrailsModule } from './guardrails/guardrails.module';
 import { ChannelsModule } from './channels/channels.module';
 import { ToolsModule } from './tools/tools.module';
+import { HandoffModule } from './handoff/handoff.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ToolsModule } from './tools/tools.module';
     GuardrailsModule,
     ChannelsModule,
     ToolsModule,
+    HandoffModule,
   ],
   controllers: [AppController],
   providers: [AppService],
