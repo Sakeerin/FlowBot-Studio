@@ -7,7 +7,8 @@
     "project": [
       "./apps/api/tsconfig.json",
       "./apps/web/tsconfig.json",
-      "./packages/shared/tsconfig.json"
+      "./packages/shared/tsconfig.json",
+      "./packages/widget/tsconfig.json"
     ]
   },
   "plugins": ["@typescript-eslint"],
@@ -17,5 +18,13 @@
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": "warn"
   },
-  "ignorePatterns": ["node_modules", "dist", ".next", "coverage", "*.config.js", "**/*.spec.ts"]
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    ".next",
+    "coverage",
+    "*.config.js",
+    "**/*.spec.ts",
+    "**/public/**/*.js"
+  ]
 }
