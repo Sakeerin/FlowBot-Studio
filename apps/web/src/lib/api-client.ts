@@ -191,6 +191,39 @@ class ApiClient {
     const response = await this.client.get(`/handoff/${ticketId}/sla`);
     return response.data;
   }
+
+  // Analytics
+  async getConversationLogs(filters?: {
+    startDate?: string;
+    endDate?: string;
+    botId?: string;
+    channel?: string;
+    hasHandoff?: boolean;
+    hasFallback?: boolean;
+    search?: string;
+  }) {
+    const response = await this.client.get('/analytics/logs', { params: filters });
+    return response.data;
+  }
+
+  async getSessionTrace(sessionId: string) {
+    const response = await this.client.get(`/analytics/sessions/${sessionId}/trace`);
+    return response.data;
+  }
+
+  async getAnalyticsOverview(startDate?: string, endDate?: string) {
+    const response = await this.client.get('/analytics/overview', {
+      params: { startDate, endDate },
+    });
+    return response.data;
+  }
+
+  async getDailyRollups(startDate?: string, endDate?: string) {
+    const response = await this.client.get('/analytics/rollups', {
+      params: { startDate, endDate },
+    });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

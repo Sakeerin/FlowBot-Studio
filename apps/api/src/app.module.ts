@@ -12,6 +12,7 @@ import { GuardrailsModule } from './guardrails/guardrails.module';
 import { ChannelsModule } from './channels/channels.module';
 import { ToolsModule } from './tools/tools.module';
 import { HandoffModule } from './handoff/handoff.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { HandoffModule } from './handoff/handoff.module';
     ChannelsModule,
     ToolsModule,
     HandoffModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
