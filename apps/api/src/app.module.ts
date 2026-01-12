@@ -13,6 +13,8 @@ import { ChannelsModule } from './channels/channels.module';
 import { ToolsModule } from './tools/tools.module';
 import { HandoffModule } from './handoff/handoff.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { PacksModule } from './packs/packs.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ToolsModule,
     HandoffModule,
     AnalyticsModule,
+    PacksModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
