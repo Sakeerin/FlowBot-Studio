@@ -1,13 +1,6 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  CreateKnowledgeCollection,
-  CreateKnowledgeSource,
-} from '@shared/schemas/knowledge';
+import { CreateKnowledgeCollection, CreateKnowledgeSource } from '@shared/schemas/knowledge';
 import { AuditLogService } from '../audit/audit-log.service';
 
 @Injectable()
@@ -17,11 +10,7 @@ export class KnowledgeService {
     private auditLogService: AuditLogService
   ) {}
 
-  async createCollection(
-    tenantId: string,
-    userId: string,
-    dto: CreateKnowledgeCollection
-  ) {
+  async createCollection(tenantId: string, userId: string, dto: CreateKnowledgeCollection) {
     const collection = await this.prisma.knowledgeCollection.create({
       data: {
         tenantId,
@@ -87,8 +76,7 @@ export class KnowledgeService {
     collectionId: string,
     dto: CreateKnowledgeSource
   ) {
-    // Verify collection belongs to tenant
-    const collection = await this.getCollection(tenantId, collectionId);
+    await this.getCollection(tenantId, collectionId);
 
     const source = await this.prisma.knowledgeSource.create({
       data: {
@@ -145,10 +133,8 @@ export class KnowledgeService {
     } else if (source.type === 'text') {
       // Naive chunking by paragraphs
       const text = (source.content as any).text || '';
-      const paragraphs = text
-        .split(/\n\s*\n/)
-        .filter((p: string) => p.trim().length > 0);
-      
+      const paragraphs = text.split(/\n\s*\n/).filter((p: string) => p.trim().length > 0);
+
       chunks = paragraphs.map((para: string, index: number) => ({
         content: para.trim(),
         metadata: {
@@ -160,10 +146,8 @@ export class KnowledgeService {
     } else if (source.type === 'file') {
       // File content processing
       const content = (source.content as any).content || '';
-      const paragraphs = content
-        .split(/\n\s*\n/)
-        .filter((p: string) => p.trim().length > 0);
-      
+      const paragraphs = content.split(/\n\s*\n/).filter((p: string) => p.trim().length > 0);
+
       chunks = paragraphs.map((para: string, index: number) => ({
         content: para.trim(),
         metadata: {
@@ -192,10 +176,16 @@ export class KnowledgeService {
   async retrieve(
     collectionId: string,
     query: string,
-    limit: number = 5
+    limit: number = 5,
+    tenantId?: string
   ): Promise<Array<{ chunk: any; score: number; source: any }>> {
-    const collection = await this.prisma.knowledgeCollection.findUnique({
-      where: { id: collectionId },
+    const where: any = { id: collectionId };
+    if (tenantId) {
+      where.tenantId = tenantId;
+    }
+
+    const collection = await this.prisma.knowledgeCollection.findFirst({
+      where,
       include: {
         sources: {
           include: {
@@ -222,8 +212,7 @@ export class KnowledgeService {
 
         // Simple TF scoring
         for (const term of queryTerms) {
-          const matches = (contentLower.match(new RegExp(term, 'g')) || [])
-            .length;
+          const matches = (contentLower.match(new RegExp(term, 'g')) || []).length;
           score += matches;
         }
 
@@ -269,13 +258,9 @@ export class KnowledgeService {
       },
     });
 
-    const totalSources = collections.reduce(
-      (sum, col) => sum + col.sources.length,
-      0
-    );
+    const totalSources = collections.reduce((sum, col) => sum + col.sources.length, 0);
     const totalChunks = collections.reduce(
-      (sum, col) =>
-        sum + col.sources.reduce((s, src) => s + src.chunks.length, 0),
+      (sum, col) => sum + col.sources.reduce((s, src) => s + src.chunks.length, 0),
       0
     );
 
@@ -287,4 +272,3 @@ export class KnowledgeService {
     };
   }
 }
-

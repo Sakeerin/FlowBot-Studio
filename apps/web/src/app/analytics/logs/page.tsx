@@ -72,8 +72,8 @@ export default function ConversationLogsPage() {
       if (filters.hasFallback) params.hasFallback = filters.hasFallback === 'true';
       if (filters.search) params.search = filters.search;
 
-      const response = await apiClient.get('/analytics/logs', { params });
-      setSessions(response.data || []);
+      const data = await apiClient.getConversationLogs(params);
+      setSessions(data || []);
     } catch (error: any) {
       console.error('Failed to load conversation logs:', error);
     } finally {

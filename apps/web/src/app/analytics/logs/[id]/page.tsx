@@ -56,8 +56,8 @@ export default function SessionTracePage() {
 
   const loadSession = async () => {
     try {
-      const response = await apiClient.get(`/analytics/sessions/${sessionId}/trace`);
-      setSession(response.data);
+      const data = await apiClient.getSessionTrace(sessionId);
+      setSession(data);
     } catch (error: any) {
       console.error('Failed to load session trace:', error);
     } finally {

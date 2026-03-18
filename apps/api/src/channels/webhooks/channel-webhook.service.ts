@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChannelsService } from '../channels.service';
 import { ChannelAdapterFactory } from '../adapters/channel-adapter.factory';
@@ -11,6 +7,8 @@ import { ChannelWebhookPayload } from '@shared/schemas/channel';
 
 @Injectable()
 export class ChannelWebhookService {
+  private readonly logger = new Logger(ChannelWebhookService.name);
+
   constructor(
     private prisma: PrismaService,
     private channelsService: ChannelsService,
@@ -48,19 +46,22 @@ export class ChannelWebhookService {
     const adapter = this.adapterFactory.getAdapter(channel);
 
     // Verify signature
-    const signature = headers['x-line-signature'] || headers['x-hub-signature'] || headers['authorization'] || '';
-    const secret = (connection.config as any).channelSecret || 
-                   (connection.config as any).appSecret || 
-                   (connection.config as any).webhookSecret || 
-                   '';
+    const signature =
+      headers['x-line-signature'] || headers['x-hub-signature'] || headers['authorization'] || '';
+    const secret =
+      (connection.config as any).channelSecret ||
+      (connection.config as any).appSecret ||
+      (connection.config as any).webhookSecret ||
+      '';
 
-    if (secret && rawBody) {
-      const isValid = adapter.verifySignature(
-        rawBody.toString('utf8'),
-        signature,
-        secret
-      );
-
+    if (channel !== 'web') {
+      if (!secret) {
+        throw new BadRequestException('Channel connection has no webhook secret configured');
+      }
+      if (!rawBody) {
+        throw new BadRequestException('Raw body required for signature verification');
+      }
+      const isValid = adapter.verifySignature(rawBody.toString('utf8'), signature, secret);
       if (!isValid) {
         throw new BadRequestException('Invalid webhook signature');
       }
@@ -70,12 +71,10 @@ export class ChannelWebhookService {
     let payload: ChannelWebhookPayload;
     try {
       payload = adapter.parseWebhook(body, connection.config);
-    } catch (error) {
+    } catch (error: any) {
       throw new BadRequestException(`Failed to parse webhook: ${error.message}`);
     }
 
-    // Resolve tenant and bot
-    const tenantId = connection.tenantId;
     const botId = connection.botId;
 
     if (!botId) {
@@ -97,10 +96,7 @@ export class ChannelWebhookService {
       },
     };
 
-    const result = await this.runtimeService.processInbound(
-      channel,
-      runtimePayload
-    );
+    const result = await this.runtimeService.processInbound(channel, runtimePayload);
 
     // Send outgoing messages through the channel adapter
     if (result.messages && result.messages.length > 0) {
@@ -116,7 +112,7 @@ export class ChannelWebhookService {
             connection.config
           );
         } catch (error) {
-          console.error(`Failed to send message through ${channel}:`, error);
+          this.logger.error(`Failed to send message through ${channel}:`, error);
           // Continue processing other messages
         }
       }
@@ -128,4 +124,3 @@ export class ChannelWebhookService {
     };
   }
 }
-

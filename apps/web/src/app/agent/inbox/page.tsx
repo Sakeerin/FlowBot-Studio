@@ -61,8 +61,8 @@ export default function AgentInboxPage() {
 
   const loadTickets = async () => {
     try {
-      const response = await apiClient.get('/handoff', { params: filters });
-      setTickets(response.data || []);
+      const data = await apiClient.getTickets(filters);
+      setTickets(data || []);
     } catch (error: any) {
       console.error('Failed to load tickets:', error);
     } finally {
@@ -72,8 +72,8 @@ export default function AgentInboxPage() {
 
   const loadSLAAlerts = async () => {
     try {
-      const response = await apiClient.get('/handoff/alerts');
-      setSlaAlerts(response.data || []);
+      const data = await apiClient.getSLAAlerts();
+      setSlaAlerts(data || []);
     } catch (error: any) {
       console.error('Failed to load SLA alerts:', error);
     }

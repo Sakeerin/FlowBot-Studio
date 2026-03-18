@@ -1,8 +1,12 @@
 export class SessionManager {
-  private storageKey = 'flowbot_session';
+  private storageKey: string;
   private sessionId: string | null = null;
 
-  constructor(private userId?: string) {
+  constructor(
+    private userId?: string,
+    botId?: string
+  ) {
+    this.storageKey = botId ? `flowbot_session_${botId}` : 'flowbot_session';
     this.loadSession();
   }
 

@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('health')
@@ -36,7 +36,7 @@ export class HealthController {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      throw new Error('Service not ready');
+      throw new ServiceUnavailableException('Service not ready');
     }
   }
 

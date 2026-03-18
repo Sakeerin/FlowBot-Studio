@@ -7,7 +7,10 @@ export default function WidgetDemoPage() {
     // Load widget script
     const script = document.createElement('script');
     script.src = '/widget.js';
-    script.setAttribute('data-api-url', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001');
+    script.setAttribute(
+      'data-api-url',
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+    );
     script.setAttribute('data-position', 'bottom-right');
     script.setAttribute('data-theme-primary', '#007bff');
     script.setAttribute('data-chat-title', 'FlowBot Support');

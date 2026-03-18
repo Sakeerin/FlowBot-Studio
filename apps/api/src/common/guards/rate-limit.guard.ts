@@ -22,7 +22,7 @@ export class RateLimitGuard implements CanActivate {
 
   constructor(private reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+  canActivate(context: ExecutionContext): boolean | Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const handler = context.getHandler();
 

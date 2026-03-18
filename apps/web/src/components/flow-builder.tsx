@@ -20,19 +20,13 @@ import { NodeConfigPanel } from './node-config-panel';
 
 const nodeTypes = {
   Start: ({ data }: any) => (
-    <div className="px-4 py-2 bg-green-500 text-white rounded shadow">
-      {data.label || 'Start'}
-    </div>
+    <div className="px-4 py-2 bg-green-500 text-white rounded shadow">{data.label || 'Start'}</div>
   ),
   Message: ({ data }: any) => (
-    <div className="px-4 py-2 bg-blue-500 text-white rounded shadow">
-      {data.label || 'Message'}
-    </div>
+    <div className="px-4 py-2 bg-blue-500 text-white rounded shadow">{data.label || 'Message'}</div>
   ),
   AskCollect: ({ data }: any) => (
-    <div className="px-4 py-2 bg-yellow-500 text-white rounded shadow">
-      {data.label || 'Ask'}
-    </div>
+    <div className="px-4 py-2 bg-yellow-500 text-white rounded shadow">{data.label || 'Ask'}</div>
   ),
   Condition: ({ data }: any) => (
     <div className="px-4 py-2 bg-purple-500 text-white rounded shadow">
@@ -40,29 +34,19 @@ const nodeTypes = {
     </div>
   ),
   Router: ({ data }: any) => (
-    <div className="px-4 py-2 bg-pink-500 text-white rounded shadow">
-      {data.label || 'Router'}
-    </div>
+    <div className="px-4 py-2 bg-pink-500 text-white rounded shadow">{data.label || 'Router'}</div>
   ),
   ToolCall: ({ data }: any) => (
-    <div className="px-4 py-2 bg-orange-500 text-white rounded shadow">
-      {data.label || 'Tool'}
-    </div>
+    <div className="px-4 py-2 bg-orange-500 text-white rounded shadow">{data.label || 'Tool'}</div>
   ),
   AIAnswer: ({ data }: any) => (
-    <div className="px-4 py-2 bg-indigo-500 text-white rounded shadow">
-      {data.label || 'AI'}
-    </div>
+    <div className="px-4 py-2 bg-indigo-500 text-white rounded shadow">{data.label || 'AI'}</div>
   ),
   Handoff: ({ data }: any) => (
-    <div className="px-4 py-2 bg-red-500 text-white rounded shadow">
-      {data.label || 'Handoff'}
-    </div>
+    <div className="px-4 py-2 bg-red-500 text-white rounded shadow">{data.label || 'Handoff'}</div>
   ),
   End: ({ data }: any) => (
-    <div className="px-4 py-2 bg-gray-500 text-white rounded shadow">
-      {data.label || 'End'}
-    </div>
+    <div className="px-4 py-2 bg-gray-500 text-white rounded shadow">{data.label || 'End'}</div>
   ),
 };
 
@@ -74,20 +58,25 @@ export function FlowBuilder({ botId }: { botId: string }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadFlow();
-  }, [botId]);
-
-  const loadFlow = async () => {
-    try {
-      const flow = await apiClient.getDraftFlow(botId);
-      if (flow.nodes && flow.edges) {
-        setNodes(flow.nodes as Node[]);
-        setEdges(flow.edges as Edge[]);
+    let cancelled = false;
+    const loadFlow = async () => {
+      try {
+        const flow = await apiClient.getDraftFlow(botId);
+        if (!cancelled && flow.nodes && flow.edges) {
+          setNodes(flow.nodes as Node[]);
+          setEdges(flow.edges as Edge[]);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Failed to load flow:', err);
+        }
       }
-    } catch (err) {
-      console.error('Failed to load flow:', err);
-    }
-  };
+    };
+    loadFlow();
+    return () => {
+      cancelled = true;
+    };
+  }, [botId, setNodes, setEdges]);
 
   const saveFlow = useCallback(
     async (showErrors = true) => {
@@ -118,7 +107,9 @@ export function FlowBuilder({ botId }: { botId: string }) {
         if (err.response?.data?.errors) {
           setValidationErrors(err.response.data.errors);
           if (showErrors) {
-            alert('Validation errors: ' + err.response.data.errors.map((e: any) => e.message).join(', '));
+            alert(
+              'Validation errors: ' + err.response.data.errors.map((e: any) => e.message).join(', ')
+            );
           }
         } else {
           console.error('Failed to save flow:', err);
@@ -218,9 +209,7 @@ export function FlowBuilder({ botId }: { botId: string }) {
         {validationErrors.length > 0 && (
           <Panel position="top-right">
             <div className="bg-red-50 border border-red-200 rounded p-2 max-w-sm">
-              <div className="text-sm font-semibold text-red-800 mb-1">
-                Validation Errors:
-              </div>
+              <div className="text-sm font-semibold text-red-800 mb-1">Validation Errors:</div>
               {validationErrors.map((err, idx) => (
                 <div key={idx} className="text-xs text-red-700">
                   {err.message}
@@ -250,4 +239,3 @@ export function FlowBuilder({ botId }: { botId: string }) {
     </div>
   );
 }
-

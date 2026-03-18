@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotsService } from '../bots/bots.service';
 import { KnowledgeService } from '../knowledge/knowledge.service';
@@ -9,6 +9,7 @@ import * as fs from 'fs';
 
 @Injectable()
 export class PacksService {
+  private readonly logger = new Logger(PacksService.name);
   private packs: Map<string, PackManifest> = new Map();
 
   constructor(
@@ -28,7 +29,7 @@ export class PacksService {
         const pack: PackManifest = JSON.parse(packContent);
         this.packs.set(pack.id, pack);
       } catch (error) {
-        console.error(`Failed to load pack ${packFile}:`, error);
+        this.logger.error(`Failed to load pack ${packFile}:`, error);
       }
     }
   }
@@ -63,8 +64,7 @@ export class PacksService {
       settings: pack.bot.settings || {},
     });
 
-    // Save flow graph as draft
-    await this.botsService.saveDraftFlow(tenantId, bot.id, pack.flowGraph);
+    await this.botsService.saveDraftFlow(tenantId, bot.id, userId, pack.flowGraph);
 
     // Install tools if any
     const toolIds: string[] = [];
@@ -100,9 +100,8 @@ export class PacksService {
         toolIds.push(tool.id);
       }
 
-      // Update bot settings with tool IDs
       if (toolIds.length > 0) {
-        await this.botsService.update(tenantId, bot.id, {
+        await this.botsService.update(tenantId, bot.id, userId, {
           settings: {
             ...bot.settings,
             allowedToolIds: toolIds,
@@ -162,12 +161,10 @@ export class PacksService {
   }
 
   async installNewVersion(tenantId: string, userId: string, packId: string, botName?: string) {
-    // For MVP, installing a new version creates a new bot from the updated pack
-    // This prevents overwriting customized bots
+    const pack = await this.findOne(packId);
     return this.install(tenantId, userId, {
       packId,
-      botName:
-        botName || `${await this.findOne(packId)} (v${(await this.findOne(packId)).version})`,
+      botName: botName || `${pack.name} (v${pack.version})`,
     });
   }
 }

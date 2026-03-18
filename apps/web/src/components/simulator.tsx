@@ -17,9 +17,10 @@ export function Simulator({ botId }: { botId: string }) {
     try {
       const response = await apiClient.simulate(botId, message);
       if (response.messages) {
-        response.messages.forEach((msg: any) => {
-          setMessages((prev) => [...prev, { role: 'bot', content: msg.content }]);
-        });
+        setMessages((prev) => [
+          ...prev,
+          ...response.messages.map((msg: any) => ({ role: 'bot', content: msg.content })),
+        ]);
       }
       setMessage('');
     } catch (err: any) {
@@ -45,18 +46,14 @@ export function Simulator({ botId }: { botId: string }) {
           <div
             key={idx}
             className={`p-2 rounded ${
-              msg.role === 'user'
-                ? 'bg-blue-100 ml-8'
-                : 'bg-gray-100 mr-8'
+              msg.role === 'user' ? 'bg-blue-100 ml-8' : 'bg-gray-100 mr-8'
             }`}
           >
             <div className="text-xs text-gray-500 mb-1">{msg.role}</div>
             <div className="text-sm">{msg.content}</div>
           </div>
         ))}
-        {loading && (
-          <div className="text-center text-gray-500 text-sm">Processing...</div>
-        )}
+        {loading && <div className="text-center text-gray-500 text-sm">Processing...</div>}
       </div>
       <div className="p-4 border-t">
         <div className="flex space-x-2">
@@ -80,4 +77,3 @@ export function Simulator({ botId }: { botId: string }) {
     </div>
   );
 }
-

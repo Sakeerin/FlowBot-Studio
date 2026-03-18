@@ -37,7 +37,7 @@ export class FlowBotWidget {
     };
 
     this.userId = this.config.userId || this.generateUserId();
-    this.sessionManager = new SessionManager(this.userId);
+    this.sessionManager = new SessionManager(this.userId, this.config.botId);
     this.api = new WidgetAPI(this.config.apiUrl, this.config.channelId);
     this.chatUI = new ChatUI(this.config);
 
@@ -45,14 +45,17 @@ export class FlowBotWidget {
   }
 
   private generateUserId(): string {
-    const stored = localStorage.getItem('flowbot_user_id');
+    const storageKey = this.config.botId
+      ? `flowbot_user_id_${this.config.botId}`
+      : 'flowbot_user_id';
+    const stored = localStorage.getItem(storageKey);
     if (stored) {
       return stored;
     }
 
-    const userId = `web-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const userId = `web-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     try {
-      localStorage.setItem('flowbot_user_id', userId);
+      localStorage.setItem(storageKey, userId);
     } catch (e) {
       console.warn('Failed to store user ID:', e);
     }

@@ -9,7 +9,7 @@ import {
   FlowGraphDto,
 } from '@flowbot/shared';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -34,11 +34,35 @@ class ApiClient {
       return config;
     });
 
-    // Handle token refresh on 401
+    let isRefreshing = false;
+    let refreshSubscribers: Array<(token: string) => void> = [];
+
+    const onRefreshed = (token: string) => {
+      refreshSubscribers.forEach((cb) => cb(token));
+      refreshSubscribers = [];
+    };
+
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
-        if (error.response?.status === 401 && typeof window !== 'undefined') {
+        const originalRequest = error.config;
+        if (
+          error.response?.status === 401 &&
+          typeof window !== 'undefined' &&
+          !originalRequest._retry
+        ) {
+          originalRequest._retry = true;
+
+          if (isRefreshing) {
+            return new Promise((resolve) => {
+              refreshSubscribers.push((token: string) => {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                resolve(this.client.request(originalRequest));
+              });
+            });
+          }
+
+          isRefreshing = true;
           const refreshToken = localStorage.getItem('refreshToken');
           if (refreshToken) {
             try {
@@ -46,14 +70,18 @@ class ApiClient {
               const { accessToken, refreshToken: newRefreshToken } = response.data;
               localStorage.setItem('accessToken', accessToken);
               localStorage.setItem('refreshToken', newRefreshToken);
-              error.config.headers.Authorization = `Bearer ${accessToken}`;
-              return this.client.request(error.config);
+              isRefreshing = false;
+              onRefreshed(accessToken);
+              originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+              return this.client.request(originalRequest);
             } catch {
-              // Refresh failed, redirect to login
+              isRefreshing = false;
               localStorage.removeItem('accessToken');
               localStorage.removeItem('refreshToken');
               window.location.href = '/login';
             }
+          } else {
+            isRefreshing = false;
           }
         }
         return Promise.reject(error);

@@ -1,6 +1,11 @@
-import { Controller, Post, Param, Body } from '@nestjs/common';
+import { Controller, Post, Param, Body, UseGuards } from '@nestjs/common';
 import { RuntimeService } from './runtime.service';
 import { RuntimeInboundMessagePayload } from '@shared/schemas/runtime';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RbacGuard } from '../auth/guards/rbac.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('runtime')
 export class RuntimeController {
@@ -15,10 +20,13 @@ export class RuntimeController {
   }
 
   @Post('simulate/:botId')
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Roles(Role.BUILDER, Role.ADMIN, Role.OWNER)
   async simulate(
     @Param('botId') botId: string,
-    @Body() body: { message: string }
+    @Body() body: { message: string },
+    @CurrentUser() user: any
   ) {
-    return this.runtimeService.simulate(botId, body.message);
+    return this.runtimeService.simulate(user.tenantId, botId, body.message);
   }
 }

@@ -10,7 +10,7 @@ export type RegisterDto = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string(),
+  password: z.string().min(1, 'Password is required'),
 });
 
 export type LoginDto = z.infer<typeof loginSchema>;
@@ -34,4 +34,3 @@ export const authResponseSchema = z.object({
 });
 
 export type AuthResponse = z.infer<typeof authResponseSchema>;
-

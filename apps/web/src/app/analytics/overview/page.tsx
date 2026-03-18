@@ -46,13 +46,8 @@ export default function AnalyticsOverviewPage() {
 
   const loadMetrics = async () => {
     try {
-      const response = await apiClient.get('/analytics/overview', {
-        params: {
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-        },
-      });
-      setMetrics(response.data);
+      const data = await apiClient.getAnalyticsOverview(dateRange.startDate, dateRange.endDate);
+      setMetrics(data);
     } catch (error: any) {
       console.error('Failed to load metrics:', error);
     } finally {
@@ -62,13 +57,8 @@ export default function AnalyticsOverviewPage() {
 
   const loadRollups = async () => {
     try {
-      const response = await apiClient.get('/analytics/rollups', {
-        params: {
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-        },
-      });
-      setRollups(response.data || []);
+      const data = await apiClient.getDailyRollups(dateRange.startDate, dateRange.endDate);
+      setRollups(data || []);
     } catch (error: any) {
       console.error('Failed to load rollups:', error);
     }

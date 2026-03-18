@@ -15,10 +15,7 @@ import { RbacGuard } from '../auth/guards/rbac.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
-import {
-  CreateKnowledgeCollection,
-  CreateKnowledgeSource,
-} from '@shared/schemas/knowledge';
+import { CreateKnowledgeCollection, CreateKnowledgeSource } from '@shared/schemas/knowledge';
 
 @Controller('bots/:botId/kb')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -33,26 +30,16 @@ export class KnowledgeController {
     @Body() dto: CreateKnowledgeCollection,
     @CurrentUser() user: any
   ) {
-    return this.knowledgeService.createCollection(
-      user.tenantId,
-      user.id,
-      { ...dto, botId }
-    );
+    return this.knowledgeService.createCollection(user.tenantId, user.id, { ...dto, botId });
   }
 
   @Get('collections')
-  async getCollections(
-    @Param('botId') botId: string,
-    @CurrentUser() user: any
-  ) {
+  async getCollections(@Param('botId') botId: string, @CurrentUser() user: any) {
     return this.knowledgeService.getCollections(user.tenantId, botId);
   }
 
   @Get('collections/:collectionId')
-  async getCollection(
-    @Param('collectionId') collectionId: string,
-    @CurrentUser() user: any
-  ) {
+  async getCollection(@Param('collectionId') collectionId: string, @CurrentUser() user: any) {
     return this.knowledgeService.getCollection(user.tenantId, collectionId);
   }
 
@@ -64,19 +51,11 @@ export class KnowledgeController {
     @CurrentUser() user: any
   ) {
     const { collectionId, ...sourceData } = dto;
-    return this.knowledgeService.addSource(
-      user.tenantId,
-      user.id,
-      collectionId,
-      sourceData
-    );
+    return this.knowledgeService.addSource(user.tenantId, user.id, collectionId, sourceData);
   }
 
   @Get('status')
-  async getKBStatus(
-    @Param('botId') botId: string,
-    @CurrentUser() user: any
-  ) {
+  async getKBStatus(@Param('botId') botId: string, @CurrentUser() user: any) {
     return this.knowledgeService.getKBStatus(user.tenantId, botId);
   }
 
@@ -87,7 +66,6 @@ export class KnowledgeController {
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     @CurrentUser() user: any
   ) {
-    return this.knowledgeService.retrieve(body.collectionId, body.query, limit);
+    return this.knowledgeService.retrieve(body.collectionId, body.query, limit, user.tenantId);
   }
 }
-

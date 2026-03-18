@@ -58,8 +58,8 @@ export default function TicketDetailPage() {
 
   const loadTicket = async () => {
     try {
-      const response = await apiClient.get(`/handoff/${ticketId}`);
-      setTicket(response.data);
+      const data = await apiClient.getTicket(ticketId);
+      setTicket(data);
     } catch (error: any) {
       console.error('Failed to load ticket:', error);
     } finally {
@@ -69,8 +69,8 @@ export default function TicketDetailPage() {
 
   const loadSLAStatus = async () => {
     try {
-      const response = await apiClient.get(`/handoff/${ticketId}/sla`);
-      setSlaStatus(response.data);
+      const data = await apiClient.getSLStatus(ticketId);
+      setSlaStatus(data);
     } catch (error: any) {
       console.error('Failed to load SLA status:', error);
     }
@@ -81,7 +81,7 @@ export default function TicketDetailPage() {
 
     setSending(true);
     try {
-      await apiClient.post(`/handoff/${ticketId}/message`, { content: message });
+      await apiClient.sendTicketMessage(ticketId, message);
       setMessage('');
       await loadTicket();
     } catch (error: any) {
@@ -94,7 +94,7 @@ export default function TicketDetailPage() {
 
   const handleUpdateStatus = async (status: string) => {
     try {
-      await apiClient.put(`/handoff/${ticketId}`, { status });
+      await apiClient.updateTicket(ticketId, { status });
       await loadTicket();
     } catch (error: any) {
       console.error('Failed to update status:', error);
@@ -104,7 +104,7 @@ export default function TicketDetailPage() {
 
   const handleAssign = async (assignedTo: string) => {
     try {
-      await apiClient.put(`/handoff/${ticketId}`, { assignedTo, status: 'assigned' });
+      await apiClient.updateTicket(ticketId, { assignedTo, status: 'assigned' });
       await loadTicket();
     } catch (error: any) {
       console.error('Failed to assign ticket:', error);
@@ -116,7 +116,7 @@ export default function TicketDetailPage() {
     if (!note.trim()) return;
 
     try {
-      await apiClient.post(`/handoff/${ticketId}/notes`, { note });
+      await apiClient.addTicketNote(ticketId, note);
       setNote('');
       await loadTicket();
     } catch (error: any) {
@@ -129,7 +129,7 @@ export default function TicketDetailPage() {
     if (!tag.trim()) return;
 
     try {
-      await apiClient.post(`/handoff/${ticketId}/tags`, { tags: [tag] });
+      await apiClient.addTicketTags(ticketId, [tag]);
       setTag('');
       await loadTicket();
     } catch (error: any) {
@@ -140,7 +140,7 @@ export default function TicketDetailPage() {
 
   const handleRemoveTag = async (tagToRemove: string) => {
     try {
-      await apiClient.delete(`/handoff/${ticketId}/tags/${encodeURIComponent(tagToRemove)}`);
+      await apiClient.removeTicketTag(ticketId, tagToRemove);
       await loadTicket();
     } catch (error: any) {
       console.error('Failed to remove tag:', error);
@@ -290,9 +290,14 @@ export default function TicketDetailPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                     <select
                       value={ticket.priority}
-                      onChange={(e) =>
-                        apiClient.put(`/handoff/${ticketId}`, { priority: e.target.value })
-                      }
+                      onChange={async (e) => {
+                        try {
+                          await apiClient.updateTicket(ticketId, { priority: e.target.value });
+                          await loadTicket();
+                        } catch (error: any) {
+                          console.error('Failed to update priority:', error);
+                        }
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     >
                       <option value="low">Low</option>

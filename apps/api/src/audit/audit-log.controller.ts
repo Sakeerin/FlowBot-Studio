@@ -1,4 +1,12 @@
-import { Controller, Get, Query, UseGuards, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  DefaultValuePipe,
+  ForbiddenException,
+} from '@nestjs/common';
 import { AuditLogService } from './audit-log.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../auth/guards/rbac.guard';
@@ -24,9 +32,12 @@ export class AuditLogController {
     @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number = 50,
     @CurrentUser() user?: any
   ) {
-    // Enforce tenant isolation - only show logs for user's tenant
+    if (!user?.tenantId) {
+      throw new ForbiddenException('Tenant context required');
+    }
+
     return this.auditLogService.findMany({
-      tenantId: user?.tenantId,
+      tenantId: user.tenantId,
       action,
       targetType,
       targetId,
@@ -38,4 +49,3 @@ export class AuditLogController {
     });
   }
 }
-

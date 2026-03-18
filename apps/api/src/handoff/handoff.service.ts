@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit/audit-log.service';
 import { GuardrailsService } from '../guardrails/guardrails.service';
@@ -7,6 +7,8 @@ import { CreateHandoffTicket, UpdateHandoffTicket } from '@shared/schemas/handof
 
 @Injectable()
 export class HandoffService {
+  private readonly logger = new Logger(HandoffService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditLogService: AuditLogService,
@@ -279,7 +281,7 @@ export class HandoffService {
       });
     } catch (error: any) {
       // Log error but don't fail - message is saved in DB
-      console.error('Failed to send agent message through channel:', error);
+      this.logger.error('Failed to send agent message through channel:', error);
     }
 
     await this.auditLogService.record(

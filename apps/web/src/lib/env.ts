@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 // Client-side env schema (subset)
 const clientEnvSchema = z.object({
-  NEXT_PUBLIC_API_URL: z.string().url().default('http://localhost:3001'),
+  NEXT_PUBLIC_API_URL: z.string().url().default('http://localhost:3001/api'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 
@@ -19,4 +19,3 @@ export function validateEnv() {
     });
   }
 }
-

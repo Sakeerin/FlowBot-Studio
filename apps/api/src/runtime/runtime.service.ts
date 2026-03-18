@@ -395,10 +395,9 @@ export class RuntimeService {
     return { messages, traceSpans };
   }
 
-  async simulate(botId: string, message: string) {
-    // Get bot and draft flow
-    const bot = await this.prisma.bot.findUnique({
-      where: { id: botId },
+  async simulate(tenantId: string, botId: string, message: string) {
+    const bot = await this.prisma.bot.findFirst({
+      where: { id: botId, tenantId },
       include: {
         flowGraphs: {
           where: { isDraft: true },

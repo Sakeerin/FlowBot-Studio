@@ -216,7 +216,7 @@ export class ChatUI {
   private createLauncher(): void {
     this.launcher = document.createElement('button');
     this.launcher.className = 'flowbot-widget-launcher';
-    this.launcher.innerHTML = this.config.launcher?.icon || '💬';
+    this.launcher.textContent = this.config.launcher?.icon || '💬';
     this.launcher.setAttribute('aria-label', this.config.launcher?.text || 'Open chat');
     this.launcher.addEventListener('click', () => this.toggle());
     document.body.appendChild(this.launcher);
@@ -229,11 +229,17 @@ export class ChatUI {
     // Header
     const header = document.createElement('div');
     header.className = 'flowbot-widget-header';
-    header.innerHTML = `
-      <div class="flowbot-widget-title">${this.config.chat?.title || 'Chat'}</div>
-      <button class="flowbot-widget-close" aria-label="Close chat">×</button>
-    `;
-    header.querySelector('.flowbot-widget-close')?.addEventListener('click', () => this.close());
+    const titleEl = document.createElement('div');
+    titleEl.className = 'flowbot-widget-title';
+    titleEl.textContent = this.config.chat?.title || 'Chat';
+    header.appendChild(titleEl);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'flowbot-widget-close';
+    closeBtn.setAttribute('aria-label', 'Close chat');
+    closeBtn.textContent = '×';
+    header.appendChild(closeBtn);
+    closeBtn.addEventListener('click', () => this.close());
     this.chatWindow.appendChild(header);
 
     // Messages container
@@ -258,7 +264,7 @@ export class ChatUI {
 
     this.sendButton = document.createElement('button');
     this.sendButton.className = 'flowbot-widget-send';
-    this.sendButton.innerHTML = '➤';
+    this.sendButton.textContent = '➤';
     this.sendButton.setAttribute('aria-label', 'Send message');
     this.sendButton.addEventListener('click', () => this.sendMessage());
 

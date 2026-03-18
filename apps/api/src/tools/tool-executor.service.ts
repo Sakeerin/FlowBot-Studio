@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ServiceUnavailableException,
+  Logger,
+} from '@nestjs/common';
 import { ToolDto, HTTPToolConfig } from '@shared/schemas/tool';
 
 interface CircuitBreakerState {
@@ -7,8 +12,27 @@ interface CircuitBreakerState {
   state: 'closed' | 'open' | 'half-open';
 }
 
+const BLOCKED_HOSTS = [
+  'localhost',
+  '127.0.0.1',
+  '0.0.0.0',
+  '::1',
+  '169.254.169.254',
+  'metadata.google.internal',
+];
+
+const PRIVATE_IP_RANGES = [
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^fc00:/i,
+  /^fd/i,
+  /^fe80:/i,
+];
+
 @Injectable()
 export class ToolExecutorService {
+  private readonly logger = new Logger(ToolExecutorService.name);
   private circuitBreakers: Map<string, CircuitBreakerState> = new Map();
   private readonly maxFailures = 5;
   private readonly openTimeout = 60000; // 1 minute
@@ -46,8 +70,8 @@ export class ToolExecutorService {
       }
     }
 
-    // Build URL with query params and variable substitution
     let url = this.substituteVariables(config.url, input, secrets);
+    this.validateUrl(url);
     if (config.queryParams) {
       const queryString = Object.entries(config.queryParams)
         .map(([key, value]) => {
@@ -195,6 +219,28 @@ export class ToolExecutorService {
     state.failures = 0;
     state.state = 'closed';
     delete state.lastFailureTime;
+  }
+
+  private validateUrl(url: string): void {
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.toLowerCase();
+
+      if (BLOCKED_HOSTS.includes(hostname)) {
+        throw new BadRequestException(`Blocked host: ${hostname}`);
+      }
+
+      if (PRIVATE_IP_RANGES.some((range) => range.test(hostname))) {
+        throw new BadRequestException(`Private IP ranges are not allowed`);
+      }
+
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        throw new BadRequestException(`Only HTTP(S) protocols are allowed`);
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(`Invalid URL: ${url}`);
+    }
   }
 
   private sleep(ms: number): Promise<void> {

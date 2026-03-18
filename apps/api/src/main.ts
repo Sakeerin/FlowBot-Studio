@@ -15,7 +15,9 @@ async function bootstrap() {
 
   // Enable CORS
   const corsOrigin =
-    process.env.CORS_ORIGIN?.split(',') || process.env.WEB_URL || 'http://localhost:3000';
+    process.env.CORS_ORIGIN?.split(',').filter(Boolean) ||
+    process.env.WEB_URL ||
+    'http://localhost:3000';
   app.enableCors({
     origin: corsOrigin,
     credentials: true,
@@ -64,4 +66,8 @@ async function bootstrap() {
   logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  const logger = new Logger('Bootstrap');
+  logger.error('Failed to start application', err);
+  process.exit(1);
+});
